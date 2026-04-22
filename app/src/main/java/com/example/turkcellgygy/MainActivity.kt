@@ -21,15 +21,19 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.turkcellgygy.model.Todo
+import com.example.turkcellgygy.viewmodel.ToDoListViewModel
 
 
 // Burada ekran tanımlarını yap.
@@ -56,7 +60,7 @@ fun MyNavigatableApp(modifier: Modifier) {
     val navController = rememberNavController()
     // Magic String
     Column() {
-        NavHost(navController=navController, startDestination = Screen.Register.route){
+        NavHost(navController=navController, startDestination = Screen.Homepage.route){
             composable(Screen.Register.route) { RegisterScreen(modifier, navController) }
             composable(Screen.Homepage.route) { Homepage(modifier) }
         }
@@ -66,12 +70,41 @@ fun MyNavigatableApp(modifier: Modifier) {
 
 @Composable
 fun Homepage(modifier: Modifier) {
-    var toDoList= remember {mutableStateListOf ("veri 1", "veri 2")}
+    //stateleri yazıcam. viewmole ihtiyacım var yazmka için
 
-    Column(modifier = modifier.fillMaxSize()) {
-        // 'it' gelen string metni temsil eder, onu listeye ekliyoruz
-        AddToDo { it -> toDoList.add(it) }
-        ToDoList(toDoList = toDoList, onDelete = {i -> toDoList.removeAt(i)})
+    val todoViewModel: ToDoListViewModel = viewModel()
+
+    val todos by todoViewModel.todos.collectAsState() // collect ile stateleri topla.
+    val isLoading by todoViewModel.isloading.collectAsState()
+    val error by todoViewModel.error.collectAsState()
+
+    Column(modifier = modifier) {
+        when {
+            isLoading -> { Text("Yükleniyor") }
+            error != null -> { Text("Hata Oluştu: $error") }
+            else -> { ToDoList(todos){}}
+        }
+    }
+}
+
+@Composable
+fun ToDoList(toDoList: List<Todo>, onDelete: (Int) -> Unit){
+    //var toDoList= remember {mutableStateListOf ("veri 1", "veri 2")} //BUNU BURADA TANIMLAMİCAZ STATEHOSTİN YAPICAZ
+
+    LazyColumn(modifier =Modifier.fillMaxSize()){
+        itemsIndexed(toDoList){
+                index,todo ->
+            Row(modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically){
+                Text(todo.title)
+                Text(todo.completed.toString())
+                Text(todo.id.toString())
+                IconButton(onClick = {onDelete(index)}) {
+                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Sil")
+                }
+            }
+        }
 
     }
 }
@@ -80,8 +113,7 @@ fun Homepage(modifier: Modifier) {
 fun AddToDo(onAdd: (String) -> Unit) {
     var text =remember { mutableStateOf( value = "initial")}
 
-    Column(modifier = Modifier.fillMaxSize()){
-        Text("Todo List")
+    Column(modifier = Modifier.fillMaxWidth()){
         TextField(
             value = text.value, //static old sürece ekran güncellenmesi
             onValueChange = { newValue -> text.value = newValue}
@@ -91,26 +123,6 @@ fun AddToDo(onAdd: (String) -> Unit) {
             text.value = " " })
         {
             Text("Tıkla")
-        }
-
-    }
-}
-
-@Composable
-fun ToDoList(toDoList: List<String>, onDelete: (Int) -> Unit){
-    //var toDoList= remember {mutableStateListOf ("veri 1", "veri 2")} //BUNU BURADA TANIMLAMİCAZ STATEHOSTİN YAPICAZ
-
-    LazyColumn(modifier =Modifier.fillMaxSize()){
-        itemsIndexed(toDoList){
-            index,todo ->
-            Row(modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically){
-            Text(todo)
-            IconButton(onClick = {onDelete(index)}) {
-                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Sil")
-                }
-            }
         }
 
     }
