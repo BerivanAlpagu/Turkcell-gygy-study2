@@ -44,4 +44,32 @@ class ToDoListViewModel : ViewModel() {
             }
         }
     }
+
+    fun delete(id: Int){
+        viewModelScope.launch{
+            try{
+                repository.delete(id)
+                // Hocanın istediği gibi: veriyi veritabanından sildikten sonra listeyi yeniliyoruz.
+                fetchTodos()
+            }catch (e: Exception){
+                println(e.message)
+            }
+        }
+
+    }
+
+    fun addTodo(title: String){
+        viewModelScope.launch{
+            try{
+                // Geçici bir id atıyoruz (Supabase tarafında auto-increment ise veritabanı kendi id'sini verebilir, ancak model zorunlu kıldığı için rastgele atıyoruz)
+                val newTodo = Todo(id = (1000..99999).random(), title = title)
+                repository.addToDo(newTodo)
+                
+                // Hocanın istediği gibi: veriyi ekledikten sonra listeyi yeniliyoruz.
+                fetchTodos()
+            }catch (e: Exception){
+                println(e.message)
+            }
+        }
+    }
 }

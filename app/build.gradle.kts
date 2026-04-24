@@ -1,8 +1,23 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21"
 }
+
+//Serialization: SupabaseClienta verilecek URL ve apikey buradan okutulur main activity olsaydı local propertiesden okutabilirdin.
+//Serialization: Herhangi bir dosyadan okuyup bunu kotline atama işlemine denir. DeSERİLİZATİON DA BUNUN TAM TERSİDİR.
+val localProperties = Properties().apply(){
+    val localPropertiesFile = rootProject.file("local.properties")
+    if(localPropertiesFile.exists()){ // eğer load.properties varsa yükle bu fileı
+        load(localPropertiesFile.inputStream())
+    }
+}
+
+val supabaseUrl: String=localProperties.getProperty("supabase.url", "")
+val supabaseKey: String=localProperties.getProperty("supabase.key", "")
 
 android {
     namespace = "com.example.turkcellgygy"
@@ -42,12 +57,21 @@ android {
 }
 
 dependencies {
-    implementation("androidx.navigation:navigation-compose:2.9.7")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
+    //TODO: Add all dependencies to libs.versions.toml yap ki magic string olmasın
+    implementation(libs.navigation.compose)
+    implementation(libs.viewmodel.compose)
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
-    implementation("com.squareup.retrofit2:retrofit:2.11.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.retrofit2)
+    implementation(libs.retrofit2.converter.gson)
+
+    implementation(libs.supabase.supabase)
+    implementation(libs.supabase.postgrest)
+    //serialization işlemleri için: supabaseclient için gerekli url ve api keyleri okutabilmek için
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+
+    //emülatör çökmesi önlemek için retrofite postgrest bağlanmada sorun yaşıyor
+    implementation(libs.ktor.client)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

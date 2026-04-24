@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -27,6 +28,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 import androidx.navigation.compose.NavHost
@@ -34,6 +36,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.turkcellgygy.model.Todo
 import com.example.turkcellgygy.viewmodel.ToDoListViewModel
+import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.postgrest.Postgrest
 
 
 // Burada ekran tanımlarını yap.
@@ -82,48 +86,65 @@ fun Homepage(modifier: Modifier) {
         when {
             isLoading -> { Text("Yükleniyor") }
             error != null -> { Text("Hata Oluştu: $error") }
-            else -> { ToDoList(todos){}}
+            else -> {
+                AddToDo(onAdd = { title -> todoViewModel.addTodo(title) })
+                ToDoList(todos, onDelete = { id -> todoViewModel.delete(id) })
+            }
         }
     }
 }
 
+
 @Composable
 fun ToDoList(toDoList: List<Todo>, onDelete: (Int) -> Unit){
-    //var toDoList= remember {mutableStateListOf ("veri 1", "veri 2")} //BUNU BURADA TANIMLAMİCAZ STATEHOSTİN YAPICAZ
-
     LazyColumn(modifier =Modifier.fillMaxSize()){
-        itemsIndexed(toDoList){
-                index,todo ->
+        // Başlık kısmı tekil bir eleman olduğu için "item" içerisine almazsam direk row dersem hata alır lazycolumndan dolayı
+        item {
             Row(modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically){
-                Text(todo.title)
-                Text(todo.completed.toString())
-                Text(todo.id.toString())
-                IconButton(onClick = {onDelete(index)}) {
-                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Sil")
-                }
+                Text("TODO LISTESI", modifier = Modifier.padding(16.dp))
             }
         }
 
+        itemsIndexed(toDoList){ index,todo ->
+            Row(modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically) {
+                Text(todo.id.toString())
+                Text(todo.title)
+                IconButton(onClick = {
+                    onDelete(todo.id)
+                }) {
+                    Icon(imageVector = Icons.Default.Close, contentDescription = "Sil")
+                }
+            }
+        }
     }
 }
 
 @Composable
 fun AddToDo(onAdd: (String) -> Unit) {
-    var text =remember { mutableStateOf( value = "initial")}
+    var text = remember { mutableStateOf("") } // Başlangıç değerini boş yaptık
 
-    Column(modifier = Modifier.fillMaxWidth()){
+    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)){
         TextField(
-            value = text.value, //static old sürece ekran güncellenmesi
-            onValueChange = { newValue -> text.value = newValue}
+            value = text.value, 
+            onValueChange = { newValue -> text.value = newValue},
+            label = { Text("Yeni Todo Ekle") },
+            modifier = Modifier.fillMaxWidth()
         )
-        Button(onClick = {
-            onAdd(text.value)
-            text.value = " " })
+        Button(
+            onClick = {
+                if (text.value.isNotBlank()) {
+                    onAdd(text.value)
+                    text.value = "" // Ekledikten sonra inputu temizle
+                }
+            },
+            modifier = Modifier.padding(top = 8.dp).align(Alignment.End)
+        )
         {
-            Text("Tıkla")
+            Text("Ekle")
         }
-
     }
 }
